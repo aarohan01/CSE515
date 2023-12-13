@@ -13,3 +13,4 @@ test*
 phase2/
 models/
 pyvenv.cfg
+phase3\fixes_required.txt

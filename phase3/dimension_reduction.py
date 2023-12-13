@@ -12,47 +12,8 @@ from normalisation import *
 from utils import convert_higher_dims_to_2d
 import tensorly as tl
 
-def svd(D, k, center = True):
 
-    D = convert_higher_dims_to_2d(D)
-
-    mean = np.mean(D, axis=0)
-    D = D - mean
-
-    CDDT = np.dot(D, D.T)
-    CDTD = np.dot(D.T, D)
-
-    eigenvalues_DDT, eigenvectors_DDT = np.linalg.eig(CDDT)
-    eigenvalues_DTD, eigenvectors_DTD = np.linalg.eig(CDTD)
-
-    singular_values_DDT = np.sqrt(eigenvalues_DDT)
-    singular_values_DTD = np.sqrt(eigenvalues_DTD)
-
-    if singular_values_DDT.shape[0] > singular_values_DTD.shape[0]:
-        E = singular_values_DTD
-    else:
-        E = singular_values_DDT
-        
-    sorted_indices = np.argsort(E)[::-1]
-    sorted_indices_DDT = np.argsort(eigenvalues_DDT)[::-1]
-    sorted_indices_DTD = np.argsort(eigenvalues_DTD)[::-1]
-
-    eigenvectors_DDT = eigenvectors_DDT[:, sorted_indices_DDT]
-    eigenvectors_DTD = eigenvectors_DTD[sorted_indices_DTD, :]
-
-    E = E.real[sorted_indices]
-    U = eigenvectors_DDT.real[:, :len(E)]
-    VT = eigenvectors_DTD.real[:len(E), :]
-    U_k = U[:, :k]
-    E_k = E[:k]
-    VT_k = VT[:k, :]
-
-    D_dash = np.dot(U_k, np.dot(np.diag(E_k), VT_k))
-    D_d = (np.dot(U, np.dot(np.diag(E), VT)))
-
-    return U_k, E_k, VT_k
-
-def svd_old(data_matrix : np.ndarray, k=None, center=True ) -> np.ndarray :
+def svd(data_matrix : np.ndarray, k=None, center=False ) -> np.ndarray :
     
     '''
     Single Value Decomposition : Dimensionality reduction using eigen decomposition.
@@ -97,8 +58,7 @@ def svd_old(data_matrix : np.ndarray, k=None, center=True ) -> np.ndarray :
     VT = V.T
     
     #Calculate the core matrix S
-    # TODO Figure out rather to do .real or .pinv for dealing with imaginary values 
-    singular_values = np.sqrt(sorted_eigenvalues) 
+    singular_values = np.sqrt(np.abs(sorted_eigenvalues)) 
 
     S = np.diag(singular_values)  
 
@@ -123,8 +83,6 @@ def svd_old(data_matrix : np.ndarray, k=None, center=True ) -> np.ndarray :
             return U[:,:k], S[:k,:k], VT[:k,:]
         else  :
             raise ValueError("k is higher than the discovered latent features")
-    # Temp Fix
-    # U = U.real
 
     return U,S,VT
 

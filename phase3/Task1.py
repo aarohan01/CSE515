@@ -82,11 +82,16 @@ class Task1() :
         Calculates the latent semantics on the training data and return the transformed matrix of training set
         '''
         print(f"Calculating latent sematics for label vectors...\n")
+        
+        ### TEMP ###
         #U, S, VT = dr.svd_old(training_data, k, False)
+        '''
         U, S, VT = dr.svd(training_data, full_matrices=True )
         U = U[:,:k]
         VT = VT[:k,:]
         S = S[:k]
+        '''
+        U, S, VT = dr.svd(training_data, k)
         self.component = VT
         if S.ndim >=2 :
             training_data_transformed = U @ S
@@ -127,6 +132,7 @@ class Task1() :
         '''
         #Test 
         print(f"Calculating scores for predictions...")
+
         precision, recall, f1, accuracy  = utils.compute_scores(odd_image_label_ids, odd_image_predicted_label_ids, avg_type=None, values=True)
 
         #Display results
@@ -145,9 +151,14 @@ class Task1() :
 
         #option 5 fc layer 
         self.option = 5
-        even_image_vectors, even_image_label_ids, odd_image_vectors, odd_image_label_ids = self.get_image_vectors_and_label_ids(utils.feature_model[self.option])
+        try :
+            even_image_vectors, even_image_label_ids, odd_image_vectors, odd_image_label_ids = self.get_image_vectors_and_label_ids(utils.feature_model[self.option])
+        except Exception :
+            print("Ending program...")
+            return
+
         label_representives = self.get_label_representives(utils.label_feature_model[self.option])
-        
+              
         match case :
 
             case 1 :

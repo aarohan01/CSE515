@@ -1,0 +1,6 @@
+1. SVD
+2. Phase3 requires resnet_fc.pkl 
+    even_image_vectors, even_image_label_ids, odd_image_vectors, odd_image_label_ids = self.get_image_vectors_and_label_ids(utils.feature_model[self.option])
+    get it from database instead
+3. GUI
+4. Better organization of files
