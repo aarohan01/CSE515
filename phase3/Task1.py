@@ -82,7 +82,11 @@ class Task1() :
         Calculates the latent semantics on the training data and return the transformed matrix of training set
         '''
         print(f"Calculating latent sematics for label vectors...\n")
-        U, S, VT = dr.svd_old(training_data, k, False)
+        #U, S, VT = dr.svd_old(training_data, k, False)
+        U, S, VT = dr.svd(training_data, full_matrices=True )
+        U = U[:,:k]
+        VT = VT[:k,:]
+        S = S[:k]
         self.component = VT
         if S.ndim >=2 :
             training_data_transformed = U @ S
@@ -165,8 +169,64 @@ class Task1() :
                 label_representives_transformed = self.get_label_wise_latent_semantic_representives(even_image_vectors_by_label)
                 label_representives_transformed = np.vstack(label_representives_transformed)
 
+            case 3 :
+
+                '''
+                Get even image vectors per label, do 101 latent semantics conversions and 101 odd image transformation, create label embeddings and distance matrix
+                '''
+                distance_matrix_file = f"{k}_distance_matrix.pkl"
+                file1 = f"{k}_transformed_label_specific_semantics_matrices.pkl"
+                file2 = f"{k}_transformed_odd_image_matrices_by_label.pkl"
+                file3 = f"{k}_transformed_label_specific_semantics_embeddings.pkl"
+
+                if not (os.path.exists(distance_matrix_file)) :
+
+
+                    if not (os.path.exists(file1) and os.path.exists(file2) and os.path.exists(file3)) : 
+                        #Even images by label 
+                        even_image_vectors_by_label = self.get_image_vectors_by_label(even_image_vectors, even_image_label_ids)
+                        #Contains U @ S per label matrix 
+                        transformed_label_specific_semantics_matrices = []
+                        #Projections of all odd images in each label specific matrix 
+                        transformed_odd_image_matrices_by_label = []
+                        for label_id, label_matrix in enumerate(even_image_vectors_by_label) :
+                            print(f"Label ID : {label_id}")
+                            transformed_label_specific_semantics_matrices.append( self.fit_transform(k, label_matrix))
+                            transformed_odd_image_matrices_by_label.append(self.transform(odd_image_vectors))
+                        #Combines transformed_label_specific_semantics_matrices using kmediods to get a vector for each label 
+                        transformed_label_specific_semantics_embeddings = [utils.label_fv_kmediods(l) for l in transformed_label_specific_semantics_matrices ]   
+
+                        print('Saving transformation.....')
+                        torch.save(transformed_label_specific_semantics_matrices, file1)
+                        torch.save(transformed_odd_image_matrices_by_label, file2)
+                        torch.save(transformed_label_specific_semantics_embeddings, file3)
+
+                    else :
+                        transformed_label_specific_semantics_matrices = torch.load(file1)
+                        transformed_odd_image_matrices_by_label = torch.load(file2)
+                        transformed_label_specific_semantics_embeddings = torch.load(file3)
+
+
+                    #Converting the label vectors into a single matrix for 101 com
+                    #label_embeddings = np.vstack(transformed_label_specific_semantics_embeddings)
+                    distance_matrix = []
+                    print('Creating distance matrix....')
+                    for label_id, label_embedding in enumerate(transformed_label_specific_semantics_embeddings) :
+                        distance_matrix.append(utils.euclidean_distance_matrix(label_embedding, transformed_odd_image_matrices_by_label[label_id]))
+                    distance_matrix_stacked = np.vstack(distance_matrix)
+                    print(f"Saving distance matrix....")
+                    torch.save(distance_matrix_stacked, distance_matrix_file)
+                
+                else :
+
+                    distance_matrix_stacked =  torch.load(distance_matrix_file)
+
+
+        if case == 1 or case == 2 :
+            odd_image_label_ids_predicted = self.get_predictions(label_representives_transformed, odd_image_vectors_transformed, 'euclidean')
+        else :
+            odd_image_label_ids_predicted = np.argmin(distance_matrix_stacked, axis=0)
         
-        odd_image_label_ids_predicted = self.get_predictions(label_representives_transformed, odd_image_vectors_transformed, 'euclidean')
         self.test_and_print(odd_image_label_ids, odd_image_label_ids_predicted)
     
         ### DISPLAY PREDICTED LABEL PROMPT ###
@@ -185,6 +245,6 @@ class Task1() :
             
 if __name__ == '__main__':
     task1 = Task1()
-    task1.runTask1(2)
+    task1.runTask1(3)
 
     
